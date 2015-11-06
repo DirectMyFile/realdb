@@ -1,0 +1,7 @@
+.packages
+.idea/
+.pub
+pubspec.lock
+testdb/
+*.rl
+packages/

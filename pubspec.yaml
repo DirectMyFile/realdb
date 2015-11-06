@@ -1,0 +1,5 @@
+name: realdb
+description: Real Database
+dependencies:
+  path: "^1.3.6"
+  crypto: "^0.9.1"
