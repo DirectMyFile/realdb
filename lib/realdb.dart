@@ -26,7 +26,7 @@ class Database {
   final int opCacheSize;
   final int fileChunkSize;
 
-  Database(this.directory, {this.opCacheSize: 5, this.fileChunkSize: 512});
+  Database(this.directory, {this.opCacheSize: 1000, this.fileChunkSize: 512});
 
   factory Database.locatedAt(String path) {
     return new Database(new Directory(path));
@@ -48,20 +48,20 @@ class Database {
     });
   }
 
-  Future insertIntoTable(String tableName, object) async {
+  Future<String> insertIntoTable(String tableName, object) async {
     if (!(await doesTableExist(tableName))) {
       throw new DatabaseException("Table '${tableName}' does not exist.");
     }
 
     var packed = pack(object);
-    var id = await _createRowHash(tableName, packed);
+    var id = await _createRowHash(tableName, packed, simple: true);
 
     var byteList = packed is! Uint8List ? new Uint8List.fromList(packed) : packed;
     var row = [id, byteList.length, byteList.buffer.asByteData()];
 
     _operations.add(new InsertOperation(tableName, row));
     await _checkOpsAndFlushIfNeeded();
-    return true;
+    return id;
   }
 
   Future<bool> doesTableExist(String name) async =>
@@ -116,9 +116,6 @@ class Database {
     var file = _file("tables/${name}/data.rl");
     var raf = await file.open();
 
-    var watch = new Stopwatch();
-    var counts = [];
-
     try {
       var stream = new ChunkedFileByteStream(fileChunkSize, raf);
 
@@ -126,7 +123,6 @@ class Database {
       await stream.skip(1);
       var len = await unpacker.unpackU32();
       for (var i = 0; i < len; i++) {
-        watch.start();
         List data = await unpacker.unpack();
         var id = data[0];
         if (unpackData) {
@@ -139,9 +135,6 @@ class Database {
           var row = new Row(id, data[2]);
           yield row;
         }
-        watch.stop();
-        counts.add(watch.elapsedMicroseconds);
-        watch.reset();
       }
     } finally {
       raf.close();
@@ -213,7 +206,7 @@ class Row {
 
 Future<String> _createRowHash(String tableName, packed, {time, String salt, bool simple: false}) async {
   if (simple) {
-    return await generateStrongToken(length: 16);
+    return await generateBasicId(length: 20);
   }
 
   if (time == null) {

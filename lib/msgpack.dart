@@ -84,7 +84,6 @@ Future<Map<dynamic, int>> unpackListFileOnlyFirstValueAndPosition(File file, {in
   var len = await unpacker.unpackU32();
   var map = {};
   for (var i = 0; i < len; i++) {
-    print(i);
     await stream.skip(5);
     var key = await unpacker.unpack();
     var pos = await stream.getPosition();

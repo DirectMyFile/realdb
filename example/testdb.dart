@@ -2,24 +2,17 @@ import "dart:io";
 
 import "package:realdb/realdb.dart";
 
-const int count = 500;
+const int count = 500000;
 
 main() async {
-  var dir = new Directory("testdb");
-  if (await dir.exists()) {
-    await dir.delete(recursive: true);
-  }
   var db = new Database.locatedAt("testdb");
-  await db.createTable("messages");
-  for (var n = 1; n <= count; n++) {
-    await db.insertIntoTable("messages", {
-      "message": "Hello World"
-    });
-  }
-
-  await db.flush();
+  var ids = [];
   await for (Row row in db.fetchTable("messages")) {
-    print(row.id);
+    if (ids.contains(row.id)) {
+      print("FOUND DUPLICATE!!!!!");
+      exit(1);
+    }
+    ids.add(row.id);
   }
   await db.close();
 }
