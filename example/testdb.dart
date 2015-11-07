@@ -8,17 +8,17 @@ main() async {
   var i = 0;
   String msg = "Loaded 0 out of ${size} (0.0%)";
   stdout.write(msg);
-  await for (Row row in db.fetchTable("data")) {
+  var watch = new Stopwatch();
+  watch.start();
+  await for (Row row in db.fetchTable("data", unpackData: false)) {
     i++;
-    stdout.write("\r");
+    stdout.write("\r\x1b[0K");
     var percent = ((i / size) * 100).toStringAsFixed(1);
-    var m = "Loaded ${i} out of ${size} (${percent}%)";
-    if (m.length < msg.length) {
-      m = m.padRight(msg.length);
-    }
+    var m = "(${percent}%) Loaded ${i} out of ${size} (${watch.elapsedMicroseconds / 1000}ms)";
     stdout.write(m);
     msg = m;
   }
+  watch.stop();
   await db.close();
   stdout.writeln();
 }

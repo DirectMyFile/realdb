@@ -67,26 +67,6 @@ class Database {
   Future<bool> doesTableExist(String name) async =>
       (await listTables()).contains(name);
 
-  Future buildObjectIndex(String tableName) async {
-    if (!(await doesTableExist(tableName))) {
-      throw new DatabaseException("Table '${tableName}' does not exist.");
-    }
-
-    var indexFile = _file("tables/${tableName}/index.rl");
-    if (!(await indexFile.exists())) {
-      await indexFile.writeAsBytes(pack({}));
-    }
-
-    var file = _file("tables/${tableName}/data.rl");
-
-    if (!(await file.exists())) {
-      return;
-    }
-
-    var index = await unpackListFileOnlyFirstValueAndPosition(file, chunkSize: fileChunkSize);
-    await indexFile.writeAsBytes(pack(index));
-  }
-
   Future<TableInfo> getTableInfo(String name) async {
     if (!(await doesTableExist(name))) {
       throw new DatabaseException("Table '${name}' does not exist.");
@@ -124,6 +104,15 @@ class Database {
 
   Stream<Row> fetchTable(String name, {bool unpackData: true}) async* {
     var file = _file("tables/${name}/data.rl");
+
+    if (!(await doesTableExist(name))) {
+      throw new DatabaseException("Table '${name}' does not exist.");
+    }
+
+    if (!(await file.exists())) {
+      return;
+    }
+
     var raf = await file.open();
 
     try {
@@ -131,7 +120,7 @@ class Database {
 
       var unpacker = new AsyncUnpacker(stream);
       await stream.skip(1);
-      var len = await unpacker.unpackU32();
+      var len = await stream.readUint32();
       for (var i = 0; i < len; i++) {
         List data = await unpacker.unpack();
         var id = data[0];
