@@ -125,7 +125,7 @@ Future insertIntoListFile(File file, object, {bool isPacked: false, bool multipl
     throw new Exception("Unsupported List Type");
   }
 
-  await raf.close();
+  raf.close();
 
   if (multiple) {
     len += object.length;
@@ -138,7 +138,7 @@ Future insertIntoListFile(File file, object, {bool isPacked: false, bool multipl
   await waf.writeFrom(Packer._encodeUint32(len));
   await waf.setPosition(await waf.length());
   await waf.writeFrom(packed);
-  await waf.close();
+  waf.close();
 }
 
 dynamic unpack(buffer) {

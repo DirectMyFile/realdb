@@ -28,8 +28,8 @@ class Database {
 
   Database(this.directory, {this.opCacheSize: 1000, this.fileChunkSize: 512});
 
-  factory Database.locatedAt(String path) {
-    return new Database(new Directory(path));
+  factory Database.locatedAt(String path, {int opCacheSize: 1000, int fileChunkSize: 512}) {
+    return new Database(new Directory(path), opCacheSize: opCacheSize, fileChunkSize: fileChunkSize);
   }
 
   Future<List<String>> listTables() async =>
@@ -110,6 +110,16 @@ class Database {
       await file.create(recursive: true);
     }
     await file.writeAsBytes(pack(object));
+  }
+
+  Future<int> getTableSize(String name) async {
+    var file = _file("tables/${name}/data.rl");
+    var raf = await file.open();
+    var stream = new FileByteStream(raf);
+    await stream.skip(1);
+    var size = await stream.readUint32();
+    await stream.close();
+    return size;
   }
 
   Stream<Row> fetchTable(String name, {bool unpackData: true}) async* {
